@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrowdCare OS — Nerisal Kaval</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#07080a;
+  --bg-2:#0c0e12;
+  --panel:#101319cc;
+  --border:#ffffff14;
+  --border-strong:#ffffff26;
+  --text:#eef0f3;
+  --text-dim:#9aa2ad;
+  --text-faint:#5c6570;
+  --amber:#ff7a45;
+  --amber-dim:#ff7a4530;
+  --safe:#1fa97a;
+  --safe-dim:#1fa97a26;
+  --risk:#ff5c5c;
+  --risk-dim:#ff5c5c26;
+  --blue:#2e7dff;
+  --blue-dim:#2e7dff26;
+  --amber2:#ffb545;
+  --radius:14px;
+  --mono: 'JetBrains Mono', monospace;
+  --disp: 'Space Grotesk', sans-serif;
+  --body: 'Inter', sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, #ff7a4514, transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, #2e7dff10, transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+
+/* ---------- Background grid signature ---------- */
+.grid-bg{
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.5;
+}
+.grid-bg canvas{width:100%; height:100%;}
+
+/* ---------- Layout ---------- */
+.app{ position:relative; z-index:1; display:flex; min-height:100vh;}
+.sidebar{
+  width:230px; flex-shrink:0; position:sticky; top:0; height:100vh;
+  border-right:1px solid var(--border);
+  background:#0a0b0ecc; backdrop-filter:blur(20px);
+  display:flex; flex-direction:column; padding:22px 14px;
+  z-index:50;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:6px 10px 22px 10px;}
+.brand-mark{ width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,var(--amber),var(--risk)); display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-weight:700; font-size:14px; color:#0a0a0a; flex-shrink:0;}
+.brand-name{ font-family:var(--disp); font-weight:700; font-size:15px; letter-spacing:0.2px;}
+.brand-sub{ font-size:10px; color:var(--text-faint); font-family:var(--mono); letter-spacing:0.5px;}
+nav.navlist{ display:flex; flex-direction:column; gap:2px; flex:1; overflow-y:auto;}
+nav.navlist a{
+  display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text-dim);
+  font-size:13px; font-weight:500; padding:9px 12px; border-radius:9px; transition:all .15s ease;
+  border:1px solid transparent;
+}
+nav.navlist a:hover{ background:#ffffff08; color:var(--text);}
+nav.navlist a.active{ background:#ffffff0d; color:var(--text); border-color:var(--border);}
+nav.navlist a .dot{ width:5px; height:5px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
+nav.navlist a.active .dot{ background:var(--amber); box-shadow:0 0 8px var(--amber);}
+.sidebar-foot{ padding:12px 10px 4px; font-size:10px; color:var(--text-faint); font-family:var(--mono); border-top:1px solid var(--border); margin-top:10px;}
+.status-pill{ display:inline-flex; align-items:center; gap:6px; font-size:10px; color:var(--safe); margin-top:8px;}
+.status-pill .pulse{ width:6px; height:6px; border-radius:50%; background:var(--safe); box-shadow:0 0 8px var(--safe); animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+main{ flex:1; min-width:0;}
+section{ padding:64px 56px; max-width:1180px; margin:0 auto; border-bottom:1px solid var(--border);}
+section:last-child{ border-bottom:none;}
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--amber); display:flex; align-items:center; gap:8px; margin-bottom:10px;
+}
+.eyebrow::before{ content:''; width:16px; height:1px; background:var(--amber);}
+h1.page-title{ font-family:var(--disp); font-size:38px; font-weight:700; letter-spacing:-0.5px; margin-bottom:10px;}
+p.page-desc{ color:var(--text-dim); font-size:15px; max-width:640px; line-height:1.6; margin-bottom:36px;}
+
+/* ---------- Cards / grid ---------- */
+.grid{ display:grid; gap:14px;}
+.grid.cols-4{ grid-template-columns:repeat(4,1fr);}
+.grid.cols-3{ grid-template-columns:repeat(3,1fr);}
+.grid.cols-2{ grid-template-columns:repeat(2,1fr);}
+@media (max-width:1000px){ .grid.cols-4{grid-template-columns:repeat(2,1fr);} .grid.cols-3{grid-template-columns:repeat(2,1fr);} }
+
+.card{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; backdrop-filter:blur(16px); position:relative; overflow:hidden;
+  transition:border-color .2s ease, transform .2s ease;
+}
+.card:hover{ border-color:var(--border-strong); transform:translateY(-2px);}
+.card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, #ffffff40, transparent);
+}
+.kpi-label{ font-size:11px; color:var(--text-faint); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px;}
+.kpi-value{ font-family:var(--disp); font-size:30px; font-weight:700; line-height:1;}
+.kpi-value.small{ font-size:20px;}
+.kpi-sub{ font-size:12px; color:var(--text-dim); margin-top:8px;}
+.kpi-value .unit{ font-size:15px; color:var(--text-dim); font-weight:500;}
+
+/* progress bar */
+.bar-track{ height:6px; border-radius:6px; background:#ffffff12; overflow:hidden; margin-top:10px;}
+.bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--amber),var(--amber2)); }
+
+/* ---------- Roadmap ---------- */
+.roadmap-flow{ display:flex; align-items:center; gap:0; flex-wrap:wrap; margin:30px 0;}
+.rm-node{
+  padding:14px 20px; border-radius:10px; border:1px solid var(--border); background:var(--panel);
+  font-size:13px; font-weight:600; font-family:var(--disp); white-space:nowrap;
+  display:flex; align-items:center; gap:8px;
+}
+.rm-node.done{ color:var(--safe); border-color:var(--safe-dim);}
+.rm-node.current{ color:var(--amber); border-color:var(--amber); background:#ff7a4512; box-shadow:0 0 24px -8px var(--amber);}
+.rm-node.future{ color:var(--text-faint);}
+.rm-arrow{ color:var(--text-faint); font-size:18px; margin:0 10px;}
+
+/* ---------- status list ---------- */
+.status-row{
+  display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);
+}
+.status-row:last-child{ border-bottom:none;}
+.status-icon{ width:64px; flex-shrink:0; text-align:center; font-family:var(--mono); font-size:9.5px; letter-spacing:0.6px; padding:3px 0; border-radius:5px; border:1px solid transparent;}
+.status-icon.done{color:var(--safe); border-color:var(--safe-dim); background:var(--safe-dim);}
+.status-icon.wip{color:var(--amber2); border-color:var(--amber-dim); background:var(--amber-dim);}
+.status-icon.blocked{color:var(--risk); border-color:var(--risk-dim); background:var(--risk-dim);}
+.status-name{ flex:0 0 220px; font-weight:600; font-size:14px;}
+.status-bar-wrap{ flex:1; }
+.status-pct{ width:44px; text-align:right; font-family:var(--mono); font-size:13px; color:var(--text-dim);}
+
+.process-list{ display:grid; gap:10px; margin-top:18px; }
+.process-item{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--border); background:#ffffff06; border-radius:10px; }
+.process-item strong{ font-family:var(--disp); font-size:14px; }
+.process-meta{ font-size:12px; color:var(--text-dim); }
+.process-pill{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.6px; padding:4px 8px; border-radius:999px; border:1px solid transparent; }
+.process-pill.done{ color:var(--safe); background:var(--safe-dim); border-color:var(--safe-dim); }
+.process-pill.wip{ color:var(--amber2); background:var(--amber-dim); border-color:var(--amber-dim); }
+.process-pill.next{ color:var(--blue); background:var(--blue-dim); border-color:var(--blue-dim); }
+
+/* ---------- vertical milestone timeline ---------- */
+.timeline{ position:relative; padding-left:28px; margin-top:20px;}
+.timeline::before{ content:''; position:absolute; left:6px; top:6px; bottom:6px; width:1px; background:linear-gradient(var(--amber), var(--border));}
+.tl-item{ position:relative; padding-bottom:36px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-dot{ position:absolute; left:-28px; top:2px; width:13px; height:13px; border-radius:50%; background:var(--bg); border:2px solid var(--text-faint);}
+.tl-item.active .tl-dot{ border-color:var(--amber); background:var(--amber); box-shadow:0 0 12px var(--amber);}
+.tl-item.complete .tl-dot{ border-color:var(--safe); background:var(--safe);}
+.tl-title{ font-family:var(--disp); font-weight:600; font-size:16px; margin-bottom:4px;}
+.tl-meta{ font-size:12px; color:var(--text-faint); font-family:var(--mono); margin-bottom:8px; display:flex; gap:14px; flex-wrap:wrap;}
+.tl-desc{ font-size:13px; color:var(--text-dim); line-height:1.6; max-width:600px;}
+.tag{ display:inline-block; font-size:10px; padding:3px 8px; border-radius:20px; border:1px solid var(--border); color:var(--text-dim); font-family:var(--mono);}
+
+/* ---------- product flow diagram ---------- */
+.pflow{ display:flex; flex-direction:column; gap:0; align-items:flex-start; margin:24px 0;}
+.pflow .pf-node{ padding:12px 18px; border-radius:9px; border:1px solid var(--border); background:var(--panel); font-size:13px; font-family:var(--mono); font-weight:500;}
+.pflow .pf-arrow{ margin:4px 0 4px 24px; color:var(--text-faint); font-size:14px;}
+.product-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px;}
+.product-title{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:4px;}
+.product-tag{ font-size:11px; font-family:var(--mono); color:var(--amber); margin-bottom:18px; letter-spacing:0.5px;}
+.hw-list{ margin-top:18px; padding-top:18px; border-top:1px solid var(--border);}
+.hw-list li{ font-size:13px; color:var(--text-dim); list-style:none; padding:4px 0; display:flex; gap:8px;}
+.hw-list li::before{content:'▸'; color:var(--amber);}
+
+/* ---------- architecture diagram ---------- */
+.arch-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; margin:34px 0;}
+.arch-node{
+  width:100%; max-width:420px; padding:14px 20px; border-radius:10px; border:1px solid var(--border);
+  background:var(--panel); text-align:center; font-family:var(--disp); font-weight:600; font-size:14px;
+  cursor:pointer; transition:all .2s ease; position:relative;
+}
+.arch-node:hover{ border-color:var(--amber); background:#ff7a450f;}
+.arch-node .idx{ font-family:var(--mono); font-size:10px; color:var(--text-faint); position:absolute; left:14px; top:50%; transform:translateY(-50%);}
+.arch-arrow-v{ color:var(--text-faint); font-size:16px;}
+.arch-detail{
+  display:none; background:#ffffff08; border:1px solid var(--border); border-radius:10px; padding:14px 18px;
+  font-size:12.5px; color:var(--text-dim); max-width:420px; width:100%; margin:-2px 0 6px; line-height:1.6;
+}
+.arch-detail.open{ display:block;}
+
+/* ---------- learning tracker ---------- */
+.learn-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px;}
+.learn-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+.learn-name{ font-family:var(--disp); font-weight:700; font-size:15px;}
+.learn-badge{ font-size:10px; font-family:var(--mono); padding:3px 8px; border-radius:20px;}
+.learn-badge.impl{ background:var(--safe-dim); color:var(--safe);}
+.learn-badge.progress{ background:var(--amber-dim); color:var(--amber2);}
+.learn-badge.planned{ background:#ffffff10; color:var(--text-faint);}
+.learn-usage{ font-size:12.5px; color:var(--text-dim); margin-top:10px; line-height:1.5;}
+
+/* ---------- business table ---------- */
+.biz-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;}
+.biz-table th{ text-align:left; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-faint); padding:10px 14px; border-bottom:1px solid var(--border-strong);}
+.biz-table td{ padding:14px; border-bottom:1px solid var(--border); vertical-align:middle;}
+.biz-table tr:hover td{ background:#ffffff05;}
+.seg-name{ font-family:var(--disp); font-weight:600;}
+.rate{ display:inline-flex; gap:3px;}
+.rate span{ width:7px; height:7px; border-radius:50%; background:var(--border-strong);}
+.rate span.on{ background:var(--amber);}
+
+/* pain point cards */
+.pain-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:24px;}
+.pain-title{ font-family:var(--disp); font-size:18px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px;}
+.pain-col-title{ font-size:11px; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;}
+.pain-col-title.prob{ color:var(--risk);}
+.pain-col-title.sol{ color:var(--safe);}
+.pain-list{ list-style:none; margin-bottom:18px;}
+.pain-list li{ font-size:13px; color:var(--text-dim); padding:5px 0; line-height:1.5;}
+
+/* ROI infographic */
+.roi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:10px;}
+@media (max-width:1000px){ .roi-grid{grid-template-columns:repeat(2,1fr);} }
+.roi-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; text-align:center;}
+.roi-icon{ font-size:15px; font-family:var(--mono); color:var(--amber); margin-bottom:10px; letter-spacing:1px;}
+.roi-label{ font-size:12.5px; color:var(--text-dim); line-height:1.4;}
+
+/* competitor table */
+.comp-table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:10px;}
+.comp-table th, .comp-table td{ padding:12px 14px; border-bottom:1px solid var(--border); text-align:center;}
+.comp-table th{ font-family:var(--disp); font-size:12.5px; text-align:left; color:var(--text-dim);}
+.comp-table th:not(:first-child){ text-align:center;}
+.comp-table td:first-child{ text-align:left; font-weight:600; font-size:12.5px;}
+.check{ color:var(--safe); font-size:15px;}
+.cross{ color:var(--text-faint); font-size:14px;}
+.partial{ color:var(--amber2); font-size:13px;}
+
+/* readiness bars */
+.readiness-row{ display:flex; align-items:center; gap:18px; padding:14px 0; border-bottom:1px solid var(--border);}
+.readiness-row:last-child{border-bottom:none;}
+.readiness-label{ flex:0 0 220px; font-size:13.5px; font-weight:600;}
+.readiness-track{ flex:1; height:8px; border-radius:6px; background:#ffffff10; overflow:hidden;}
+.readiness-fill{ height:100%; border-radius:6px;}
+.readiness-val{ width:50px; text-align:right; font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+
+.blocker-box{ background:var(--risk-dim); border:1px solid #ff5c5c40; border-radius:var(--radius); padding:20px 24px; margin-top:24px;}
+.blocker-box h4{ font-family:var(--disp); color:var(--risk); font-size:14px; margin-bottom:10px;}
+.blocker-box li{ list-style:none; font-size:13px; color:var(--text-dim); padding:4px 0;}
+
+footer{ padding:40px 56px; text-align:center; color:var(--text-faint); font-size:12px; font-family:var(--mono);}
+
+/* ---------- edit mode ---------- */
+.edit-btn{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.4px; text-transform:uppercase;
+  background:#ffffff08; color:var(--text-dim); border:1px solid var(--border); border-radius:7px;
+  padding:6px 12px; cursor:pointer; transition:all .15s ease; flex:1;
+}
+.edit-btn:hover{ border-color:var(--border-strong); color:var(--text);}
+.edit-btn.primary{ background:var(--amber); color:#100a06; border-color:var(--amber); font-weight:600;}
+.edit-btn.primary:hover{ background:var(--amber2);}
+.save-status{ font-size:10px; font-family:var(--mono); color:var(--safe); margin-top:8px; min-height:14px; opacity:0; transition:opacity .3s ease;}
+.save-status.show{ opacity:1;}
+body.edit-mode .editable{ outline:1px dashed var(--amber-dim); border-radius:4px; cursor:text; padding:0 3px;}
+body.edit-mode .editable:focus{ outline:1px solid var(--amber); background:#ff7a4510;}
+body.edit-mode .editable-bar-handle{ display:block;}
+.editable-bar-handle{ display:none; width:100%; margin-top:4px; accent-color:var(--amber);}
+
+/* ---------- infographic ---------- */
+.infographic-sheet{
+  background:var(--panel); border:1px solid var(--border); border-radius:18px;
+  padding:40px; backdrop-filter:blur(16px);
+}
+.infog-header{ display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid var(--border); padding-bottom:20px; margin-bottom:28px;}
+.infog-header .h-title{ font-family:var(--disp); font-size:22px; font-weight:700;}
+.infog-header .h-meta{ font-family:var(--mono); font-size:11px; color:var(--text-faint); text-align:right; line-height:1.6;}
+.infog-block{ margin-bottom:34px;}
+.infog-block-title{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--amber); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border);}
+.chart-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+@media (max-width:900px){ .chart-grid{grid-template-columns:1fr;} }
+.chart-box{ background:#ffffff05; border:1px solid var(--border); border-radius:12px; padding:18px;}
+.chart-box canvas{ max-height:260px;}
+.chart-box-title{ font-family:var(--disp); font-size:13px; font-weight:600; color:var(--text-dim); margin-bottom:10px;}
+.stat-strip{ display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+@media (max-width:900px){ .stat-strip{grid-template-columns:repeat(3,1fr);} }
+.stat-strip div{ background:var(--bg-2); padding:16px 12px; text-align:center;}
+.stat-strip .num{ font-family:var(--disp); font-size:22px; font-weight:700;}
+.stat-strip .lbl{ font-family:var(--mono); font-size:9.5px; color:var(--text-faint); text-transform:uppercase; margin-top:4px;}
+.print-btn{ font-family:var(--mono); font-size:11px; background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:7px; padding:8px 16px; cursor:pointer;}
+.print-btn:hover{ border-color:var(--border-strong); color:var(--text);}
+@media print{
+  .sidebar, .print-btn, .edit-btn{ display:none !important;}
+  section{ break-inside:avoid;}
+}
+::-webkit-scrollbar{ width:8px;} ::-webkit-scrollbar-thumb{ background:#ffffff20; border-radius:8px;}
+
+@media (max-width:860px){
+  .sidebar{ display:none;}
+  section{ padding:44px 20px;}
+  h1.page-title{ font-size:28px;}
+  .roadmap-flow{flex-direction:column; align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"><canvas id="bgCanvas"></canvas></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">CC</div>
+      <div>
+        <div class="brand-name">CrowdCare</div>
+        <div class="brand-sub">NERISAL KAVAL · OS</div>
+      </div>
+    </div>
+    <nav class="navlist" id="navlist">
+      <a href="#home"><span class="dot"></span>Home</a>
+      <a href="#status"><span class="dot"></span>Current Status</a>
+      <a href="#roadmap"><span class="dot"></span>Roadmap</a>
+      <a href="#product"><span class="dot"></span>Product</a>
+      <a href="#architecture"><span class="dot"></span>Architecture</a>
+      <a href="#metrics"><span class="dot"></span>Engineering Metrics</a>
+      <a href="#learning"><span class="dot"></span>Learning Tracker</a>
+      <a href="#business"><span class="dot"></span>Business Dashboard</a>
+      <a href="#pain"><span class="dot"></span>Pain Points</a>
+      <a href="#roi"><span class="dot"></span>Why Customers Pay</a>
+      <a href="#competitors"><span class="dot"></span>Competitor Analysis</a>
+      <a href="#investment"><span class="dot"></span>Investment Readiness</a>
+      <a href="#infographic"><span class="dot"></span>Full Infographic</a>
+    </nav>
+    <div class="sidebar-foot">
+      v0.4.0-mvp · build 2026.07<br>
+      <span class="status-pill"><span class="pulse"></span>Prototype → MVP</span>
+      <div style="display:flex; gap:6px; margin-top:14px;">
+        <button id="editToggleBtn" class="edit-btn">Edit</button>
+        <button id="saveBtn" class="edit-btn primary" style="display:none;">Save</button>
+      </div>
+      <div id="saveStatus" class="save-status"></div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ================= HOME ================= -->
+    <section id="home">
+      <div class="eyebrow">Process Tracking</div>
+      <h1 class="page-title">CrowdCare Process Tracker</h1>
+      <p class="page-desc">A live workflow dashboard for tracking milestones, active work, blockers, and the next delivery steps. This view is designed to show how the project is progressing from idea to pilot.</p>
+
+      <div class="grid cols-4">
+        <div class="card">
+          <div class="kpi-label">Overall Progress</div>
+          <div class="kpi-value"><span class="editable" contenteditable="true" data-key="home-progress" id="kpiProgress">0</span><span class="unit">%</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" id="kpiProgressBar"></div></div>
+          <div class="kpi-sub">Prototype complete, MVP hardening in progress</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Current Phase</div>
+          <div class="kpi-value small">MVP</div>
+          <div class="kpi-sub">Core pipeline proven · forecasting + edge in progress</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Current Sprint Goal</div>
+          <div class="kpi-value small editable" contenteditable="true" data-key="sprint-goal">Risk Engine v2</div>
+          <div class="kpi-sub">Trend-based forecasting on live density history</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Days Until MVP</div>
+          <div class="kpi-value"><span class="editable" contenteditable="true" data-key="days-mvp">21</span><span class="unit">d</span></div>
+          <div class="kpi-sub">Target: predictive forecasting + hardened alerts</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Features Completed</div>
+          <div class="kpi-value"><span class="editable" contenteditable="true" data-key="feat-done">7</span><span class="unit">/10</span></div>
+          <div class="kpi-sub">Detection, tracking, zones, heatmaps, risk engine, dashboard, alerts</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Features Remaining</div>
+          <div class="kpi-value editable" contenteditable="true" data-key="feat-remaining">3</div>
+          <div class="kpi-sub">Predictive forecasting, drone GPS, edge deployment</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Research Papers Studied</div>
+          <div class="kpi-value editable" contenteditable="true" data-key="papers-studied">14</div>
+          <div class="kpi-sub">YOLO/tracking benchmarks, crowd-risk & stampede modeling</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">GitHub Commits</div>
+          <div class="kpi-value editable" contenteditable="true" data-key="github-commits">186</div>
+          <div class="kpi-sub">Across detection, backend, dashboard branches</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Current Version</div>
+          <div class="kpi-value small editable" contenteditable="true" data-key="current-version">v0.4.0</div>
+          <div class="kpi-sub">Multi-camera + risk engine stable release</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Current Bottleneck</div>
+          <div class="kpi-value small editable" contenteditable="true" data-key="bottleneck" style="color:var(--risk)">Inference @ scale</div>
+          <div class="kpi-sub">FPS drops on >4 concurrent streams without GPU batching</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Next Milestone</div>
+          <div class="kpi-value small">Real-world Pilot</div>
+          <div class="kpi-sub">First fixed-camera deployment at a mid-size venue</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Team</div>
+          <div class="kpi-value small">3 builders</div>
+          <div class="kpi-sub">AI/backend · product/frontend · CV/ML</div>
+        </div>
+      </div>
+
+      <div class="eyebrow" style="margin-top:48px">Visual Roadmap</div>
+      <div class="roadmap-flow">
+        <div class="rm-node done">✓ Research</div><div class="rm-arrow">→</div>
+        <div class="rm-node done">✓ Prototype</div><div class="rm-arrow">→</div>
+        <div class="rm-node current">● MVP</div><div class="rm-arrow">→</div>
+        <div class="rm-node future">Pilot</div><div class="rm-arrow">→</div>
+        <div class="rm-node future">Commercial Product</div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="kpi-label">Live Process Checklist</div>
+        <div class="process-list">
+          <div class="process-item"><div><strong>Research & Concept</strong><div class="process-meta">Problem framing, crowd risk study, and early validation</div></div><div class="process-pill done">Done</div></div>
+          <div class="process-item"><div><strong>Prototype Build</strong><div class="process-meta">Detection, tracking, zone mapping, dashboard</div></div><div class="process-pill done">Done</div></div>
+          <div class="process-item"><div><strong>MVP Hardening</strong><div class="process-meta">Forecasting, alert quality, and runtime stability</div></div><div class="process-pill wip">In Progress</div></div>
+          <div class="process-item"><div><strong>Pilot Readiness</strong><div class="process-meta">Venue access, deployment setup, and pilot operations</div></div><div class="process-pill next">Next</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CURRENT STATUS ================= -->
+    <section id="status">
+      <div class="eyebrow">Subsystem State</div>
+      <h1 class="page-title">Current Status</h1>
+      <p class="page-desc">Exactly where each subsystem stands today — no rounding up.</p>
+
+      <div class="card" style="padding:8px 24px;">
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Multi-camera support</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-multicam" style="width:100%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-multicam" data-suffix="%">100%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">YOLOv8 detection</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-yolo" style="width:100%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-yolo" data-suffix="%">100%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Tracking</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-tracking" style="width:90%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-tracking" data-suffix="%">90%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Zone mapping</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-zonemap" style="width:95%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-zonemap" data-suffix="%">95%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Heatmaps</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-heatmap" style="width:100%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-heatmap" data-suffix="%">100%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Risk engine</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-riskengine" style="width:80%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-riskengine" data-suffix="%">80%</div></div>
+        <div class="status-row"><div class="status-icon done">DONE</div><div class="status-name">Dashboard</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-dashboard" style="width:90%;background:var(--safe)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-dashboard" data-suffix="%">90%</div></div>
+        <div class="status-row"><div class="status-icon wip">IN PROGRESS</div><div class="status-name">Predictive forecasting</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-forecast" style="width:35%;background:var(--amber2)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-forecast" data-suffix="%">35%</div></div>
+        <div class="status-row"><div class="status-icon wip">IN PROGRESS</div><div class="status-name">Drone GPS awareness</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-dronegps" style="width:20%;background:var(--amber2)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-dronegps" data-suffix="%">20%</div></div>
+        <div class="status-row"><div class="status-icon blocked">BLOCKED</div><div class="status-name">Edge deployment</div><div class="status-bar-wrap"><div class="bar-track"><div class="bar-fill editable-bar" data-key="status-edge" style="width:5%;background:var(--risk)"></div></div></div><div class="status-pct editable" contenteditable="true" data-key="status-edge" data-suffix="%">5%</div></div>
+      </div>
+    </section>
+
+    <!-- ================= ROADMAP ================= -->
+    <section id="roadmap">
+      <div class="eyebrow">Engineering Milestones</div>
+      <h1 class="page-title">Roadmap</h1>
+      <p class="page-desc">MVP → Pilot → Temple Deployment → Event Deployment → SaaS → Enterprise, with real dependencies at each step.</p>
+
+      <div class="timeline">
+        <div class="tl-item complete">
+          <div class="tl-dot"></div>
+          <div class="tl-title">MVP</div>
+          <div class="tl-meta"><span class="tag">In progress</span><span>Est. 3 weeks</span></div>
+          <div class="tl-desc">Deliverables: stable risk engine, forecasting v1, alerting pipeline. Dependencies: GPU batching fix for multi-stream FPS, trend model on heatmap history.</div>
+        </div>
+        <div class="tl-item active">
+          <div class="tl-dot"></div>
+          <div class="tl-title">Real-world Pilot</div>
+          <div class="tl-meta"><span class="tag">Next</span><span>Est. 6–8 weeks after MVP</span></div>
+          <div class="tl-desc">Deliverables: on-site fixed-camera install, live dashboard for one operator, incident log. Dependencies: a willing venue, on-site network/CCTV access, liability sign-off.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-title">Temple Deployment</div>
+          <div class="tl-meta"><span class="tag">Planned</span><span>Est. Q4</span></div>
+          <div class="tl-desc">Deliverables: queue-time estimation, festival-day stress testing. Dependencies: temple trust/administration approval, existing CCTV feed access.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-title">Event Deployment</div>
+          <div class="tl-meta"><span class="tag">Planned</span></div>
+          <div class="tl-desc">Deliverables: drone feed ingestion, dynamic zone detection for outdoor events. Dependencies: drone hardware + pilot license, GPS-zone mapping module.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-title">SaaS Platform</div>
+          <div class="tl-meta"><span class="tag">Future</span></div>
+          <div class="tl-desc">Deliverables: multi-tenant dashboard, self-serve onboarding, billing. Dependencies: 2+ successful pilots, hardened API auth, cloud infra.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-title">Enterprise</div>
+          <div class="tl-meta"><span class="tag">Future</span></div>
+          <div class="tl-desc">Deliverables: SLA-backed uptime, on-prem/edge options, compliance certifications. Dependencies: enterprise sales motion, security audits.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PRODUCT ================= -->
+    <section id="product">
+      <div class="eyebrow">Two Products, One Engine</div>
+      <h1 class="page-title">Product</h1>
+      <p class="page-desc">CrowdCare ships as two deployment modes on the same core engine.</p>
+
+      <div class="grid cols-2">
+        <div class="product-card">
+          <div class="product-title">CrowdCare Temple</div>
+          <div class="product-tag">FIXED CCTV · INDOOR/OUTDOOR VENUES</div>
+          <div class="pflow">
+            <div class="pf-node">Existing CCTV</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">AI</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Queue Intelligence</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Risk Prediction</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Dashboard</div>
+          </div>
+          <ul class="hw-list">
+            <li>Existing IP/analog CCTV (repurposed, no new cameras)</li>
+            <li>Local GPU box or on-prem server for inference (Jetson-class or small PC with GPU)</li>
+            <li>LAN connectivity between cameras and inference box</li>
+            <li>Operator screen for the live dashboard</li>
+          </ul>
+        </div>
+        <div class="product-card">
+          <div class="product-title">CrowdCare Event</div>
+          <div class="product-tag">DRONE · OUTDOOR / LARGE-SCALE EVENTS</div>
+          <div class="pflow">
+            <div class="pf-node">Drone</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">AI</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Dynamic Zone Detection</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Live Risk Dashboard</div><div class="pf-arrow">↓</div>
+            <div class="pf-node">Security Team</div>
+          </div>
+          <ul class="hw-list">
+            <li>Drone with live video downlink (GPS-tagged feed)</li>
+            <li>Ground station laptop/server running inference</li>
+            <li>Stable wireless link for video transmission</li>
+            <li>Security team tablet/screen for live risk view</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ARCHITECTURE ================= -->
+    <section id="architecture">
+      <div class="eyebrow">System Design</div>
+      <h1 class="page-title">Technical Architecture</h1>
+      <p class="page-desc">Click any module to see its responsibility.</p>
+
+      <div class="arch-wrap" id="archWrap">
+        <!-- generated by JS -->
+      </div>
+    </section>
+
+    <!-- ================= ENGINEERING METRICS ================= -->
+    <section id="metrics">
+      <div class="eyebrow">Live Numbers</div>
+      <h1 class="page-title">Engineering Metrics</h1>
+      <p class="page-desc">Measured on current dev hardware, single-GPU test rig.</p>
+
+      <div class="grid cols-4">
+        <div class="card"><div class="kpi-label">Modules</div><div class="kpi-value editable" contenteditable="true" data-key="m-modules">9</div></div>
+        <div class="card"><div class="kpi-label">APIs</div><div class="kpi-value editable" contenteditable="true" data-key="m-apis">17</div></div>
+        <div class="card"><div class="kpi-label">Database Tables</div><div class="kpi-value editable" contenteditable="true" data-key="m-tables">6</div></div>
+        <div class="card"><div class="kpi-label">FPS (single stream)</div><div class="kpi-value"><span class="editable" contenteditable="true" data-key="m-fps">23</span><span class="unit">fps</span></div></div>
+        <div class="card"><div class="kpi-label">Avg Inference Latency</div><div class="kpi-value"><span class="editable" contenteditable="true" data-key="m-latency">41</span><span class="unit">ms</span></div></div>
+        <div class="card"><div class="kpi-label">Avg API Response Time</div><div class="kpi-value"><span class="editable" contenteditable="true" data-key="m-response">86</span><span class="unit">ms</span></div></div>
+        <div class="card"><div class="kpi-label">Detection Model</div><div class="kpi-value small editable" contenteditable="true" data-key="m-model">YOLOv8n</div></div>
+        <div class="card"><div class="kpi-label">Tracking Algorithm</div><div class="kpi-value small editable" contenteditable="true" data-key="m-tracker">ByteTrack</div></div>
+        <div class="card"><div class="kpi-label">Heatmap Resolution</div><div class="kpi-value small editable" contenteditable="true" data-key="m-heatmapres">32×32 grid</div></div>
+        <div class="card"><div class="kpi-label">Risk Scoring Latency</div><div class="kpi-value"><span class="editable" contenteditable="true" data-key="m-riskms">12</span><span class="unit">ms</span></div></div>
+        <div class="card"><div class="kpi-label">Codebase Size</div><div class="kpi-value"><span class="editable" contenteditable="true" data-key="m-loc">~6.2</span><span class="unit">k LOC</span></div></div>
+        <div class="card"><div class="kpi-label">Technical Debt</div><div class="kpi-value small" style="color:var(--amber2)">Moderate</div><div class="kpi-sub">No multi-stream GPU batching yet; test coverage thin on risk engine</div></div>
+      </div>
+    </section>
+
+    <!-- ================= LEARNING TRACKER ================= -->
+    <section id="learning">
+      <div class="eyebrow">Skill Build-Out</div>
+      <h1 class="page-title">Learning Tracker</h1>
+      <p class="page-desc">Technologies being mastered as the platform matures toward edge deployment.</p>
+
+      <div class="grid cols-3" id="learnGrid"></div>
+    </section>
+
+    <!-- ================= BUSINESS DASHBOARD ================= -->
+    <section id="business">
+      <div class="eyebrow">Go-To-Market</div>
+      <h1 class="page-title">Business Dashboard</h1>
+      <p class="page-desc">Primary customer segments, rated on the axes that decide sales strategy.</p>
+
+      <table class="biz-table">
+        <thead><tr><th>Segment</th><th>Market Size</th><th>Ease of Selling</th><th>Revenue Potential</th><th>Deployment Complexity</th><th>Sales Cycle</th></tr></thead>
+        <tbody id="bizBody"></tbody>
+      </table>
+    </section>
+
+    <!-- ================= PAIN POINTS ================= -->
+    <section id="pain">
+      <div class="eyebrow">Customer Reality</div>
+      <h1 class="page-title">Customer Pain Points</h1>
+      <p class="page-desc">What's broken today, and what CrowdCare replaces it with.</p>
+
+      <div class="grid cols-2">
+        <div class="pain-card">
+          <div class="pain-title">Event Organizer</div>
+          <div class="pain-col-title prob">Current Problems</div>
+          <ul class="pain-list">
+            <li>• No real-time crowd intelligence</li>
+            <li>• Manual monitoring</li>
+            <li>• Delayed emergency response</li>
+            <li>• No hotspot detection</li>
+          </ul>
+          <div class="pain-col-title sol">CrowdCare Solves</div>
+          <ul class="pain-list">
+            <li>✓ Live crowd map</li>
+            <li>✓ Drone awareness</li>
+            <li>✓ Risk prediction</li>
+            <li>✓ Security recommendations</li>
+            <li>✓ Event reports</li>
+          </ul>
+        </div>
+        <div class="pain-card">
+          <div class="pain-title">Temple</div>
+          <div class="pain-col-title prob">Current Problems</div>
+          <ul class="pain-list">
+            <li>• Long queues</li>
+            <li>• Stampede risk</li>
+            <li>• Blind CCTV monitoring</li>
+            <li>• Poor resource allocation</li>
+          </ul>
+          <div class="pain-col-title sol">CrowdCare Solves</div>
+          <ul class="pain-list">
+            <li>✓ Queue analytics</li>
+            <li>✓ Waiting time estimation</li>
+            <li>✓ Heatmaps</li>
+            <li>✓ Crowd prediction</li>
+            <li>✓ Automatic alerts</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ROI ================= -->
+    <section id="roi">
+      <div class="eyebrow">The Business Case</div>
+      <h1 class="page-title">Why Will Customers Pay?</h1>
+      <p class="page-desc">Not what CrowdCare is built with — what it changes on the ground.</p>
+
+      <div class="roi-grid">
+        <div class="roi-card"><div class="roi-icon">01</div><div class="roi-label">Faster security decisions</div></div>
+        <div class="roi-card"><div class="roi-icon">02</div><div class="roi-label">Better crowd management</div></div>
+        <div class="roi-card"><div class="roi-icon">03</div><div class="roi-label">Reduced operational risk</div></div>
+        <div class="roi-card"><div class="roi-icon">04</div><div class="roi-label">Improved visitor experience</div></div>
+        <div class="roi-card"><div class="roi-icon">05</div><div class="roi-label">Lower monitoring workload</div></div>
+        <div class="roi-card"><div class="roi-icon">06</div><div class="roi-label">Historical analytics for future planning</div></div>
+        <div class="roi-card"><div class="roi-icon">07</div><div class="roi-label">Better use of existing CCTV</div></div>
+        <div class="roi-card"><div class="roi-icon">08</div><div class="roi-label">Early warning before congestion turns critical</div></div>
+      </div>
+    </section>
+
+    <!-- ================= COMPETITORS ================= -->
+    <section id="competitors">
+      <div class="eyebrow">Market Position</div>
+      <h1 class="page-title">Competitor Analysis</h1>
+      <p class="page-desc">CrowdCare against traditional CCTV monitoring, manual security, and basic people counters.</p>
+
+      <table class="comp-table">
+        <thead><tr><th>Feature</th><th>Traditional CCTV</th><th>Manual Security</th><th>People Counters</th><th>CrowdCare</th></tr></thead>
+        <tbody>
+          <tr><td>Detection</td><td class="partial">Passive only</td><td class="partial">Human eyes</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Tracking</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          <tr><td>Heatmaps</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          <tr><td>Risk Prediction</td><td class="cross">✗</td><td class="partial">Judgment-based</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          <tr><td>Zone Intelligence</td><td class="cross">✗</td><td class="partial">Manual</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          <tr><td>Drone Support</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="partial">In progress</td></tr>
+          <tr><td>Queue Analytics</td><td class="cross">✗</td><td class="cross">✗</td><td class="partial">Basic counts</td><td class="check">✓</td></tr>
+          <tr><td>Predictive Alerts</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="partial">In progress</td></tr>
+          <tr><td>Historical Analytics</td><td class="partial">Raw footage only</td><td class="cross">✗</td><td class="partial">Counts only</td><td class="check">✓</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ================= INVESTMENT READINESS ================= -->
+    <section id="investment">
+      <div class="eyebrow">Startup Maturity</div>
+      <h1 class="page-title">Investment Readiness</h1>
+      <p class="page-desc">Honest state, not a pitch-inflated one.</p>
+
+      <div id="readinessList"></div>
+
+      <div class="blocker-box">
+        <h4>Current Blockers Before Paid Pilots</h4>
+        <li>· No signed pilot venue yet — outreach not started to temples/event organizers</li>
+        <li>· GPU batching needed to hold FPS across multiple concurrent camera streams</li>
+        <li>· Predictive forecasting model still at 35% — needs live density history to validate</li>
+        <li>· No formal test coverage on the risk engine; needs regression suite before field trust</li>
+        <li>· Edge deployment (Jetson/OpenVINO) unstarted — required for on-prem, offline-capable pilots</li>
+      </div>
+    </section>
+
+    <!-- ================= FULL INFOGRAPHIC ================= -->
+    <section id="infographic">
+      <div class="eyebrow">Consolidated View</div>
+      <h1 class="page-title">Full Statistics Infographic</h1>
+      <p class="page-desc">Every core number in one sheet — for print, screenshot, or a one-glance mentor review.</p>
+
+      <div style="margin-bottom:20px;">
+        <button class="print-btn" onclick="window.print()">Print / Export as PDF</button>
+      </div>
+
+      <div class="infographic-sheet" id="infographicSheet">
+        <div class="infog-header">
+          <div class="h-title">CrowdCare — Build Status Sheet</div>
+          <div class="h-meta">Nerisal Kaval · v0.4.0-mvp<br>Generated from live project data</div>
+        </div>
+
+        <div class="infog-block">
+          <div class="infog-block-title">Overview</div>
+          <div class="stat-strip" id="statStrip"></div>
+        </div>
+
+        <div class="infog-block">
+          <div class="infog-block-title">Subsystem Completion</div>
+          <div class="chart-grid">
+            <div class="chart-box">
+              <div class="chart-box-title">Completion by subsystem</div>
+              <canvas id="chartSubsystems"></canvas>
+            </div>
+            <div class="chart-box">
+              <div class="chart-box-title">Readiness by category</div>
+              <canvas id="chartReadiness"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="infog-block">
+          <div class="infog-block-title">Engineering Performance</div>
+          <div class="chart-grid">
+            <div class="chart-box">
+              <div class="chart-box-title">Latency breakdown (ms)</div>
+              <canvas id="chartLatency"></canvas>
+            </div>
+            <div class="chart-box">
+              <div class="chart-box-title">Business segment scoring</div>
+              <canvas id="chartBusiness"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="infog-block">
+          <div class="infog-block-title">Roadmap Position</div>
+          <div class="roadmap-flow" style="margin:10px 0 0;">
+            <div class="rm-node done">Research</div><div class="rm-arrow">→</div>
+            <div class="rm-node done">Prototype</div><div class="rm-arrow">→</div>
+            <div class="rm-node current">MVP</div><div class="rm-arrow">→</div>
+            <div class="rm-node future">Pilot</div><div class="rm-arrow">→</div>
+            <div class="rm-node future">Commercial Product</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>CROWDCARE / NERISAL KAVAL — INTERNAL BUILD STATUS · NOT FOR PUBLIC DISTRIBUTION</footer>
+
+<script>
+// ---------------- background grid ----------------
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+let t = 0;
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const spacing = 46;
+  const cols = Math.ceil(canvas.width/spacing)+2;
+  const rows = Math.ceil(canvas.height/spacing)+2;
+  for(let i=0;i<cols;i++){
+    for(let j=0;j<rows;j++){
+      const x = i*spacing;
+      const y = j*spacing;
+      const wave = Math.sin((i*0.4)+(j*0.4)+t)*0.5+0.5;
+      const r = 1 + wave*1.6;
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      const alpha = 0.03 + wave*0.05;
+      ctx.fillStyle = `rgba(255,122,69,${alpha})`;
+      ctx.fill();
+    }
+  }
+  t += 0.008;
+  requestAnimationFrame(drawGrid);
+}
+drawGrid();
+
+// ---------------- KPI count-up ----------------
+function animateValue(el, end, suffixEl){
+  let start = 0;
+  const dur = 1200;
+  const t0 = performance.now();
+  function step(now){
+    const p = Math.min((now-t0)/dur, 1);
+    const val = Math.floor(p*end);
+    el.childNodes[0].nodeValue = val;
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+const kpiP = document.getElementById('kpiProgress');
+animateValue(kpiP, 68);
+document.getElementById('kpiProgressBar').style.width = '68%';
+
+// ---------------- nav active state on scroll ----------------
+const sections = Array.from(document.querySelectorAll('main section[id]'));
+const navLinks = Array.from(document.querySelectorAll('#navlist a'));
+
+function setActiveLink(id){
+  navLinks.forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href') === '#'+id);
+  });
+}
+
+function onScroll(){
+  const offset = window.innerHeight * 0.2;
+  let current = sections[0]?.id || '';
+  sections.forEach(s=>{
+    const top = s.getBoundingClientRect().top;
+    if(top <= offset) current = s.id;
+  });
+  setActiveLink(current);
+}
+
+navLinks.forEach(link=>{
+  link.addEventListener('click', event=>{
+    const targetId = link.getAttribute('href')?.replace('#','');
+    const target = document.getElementById(targetId);
+    if(!targetId || !target) return;
+
+    event.preventDefault();
+    const top = target.getBoundingClientRect().top + window.scrollY - 70;
+    window.scrollTo({ top, behavior: 'smooth' });
+    history.replaceState(null, '', `#${targetId}`);
+    setActiveLink(targetId);
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('load', onScroll);
+onScroll();
+
+// ---------------- architecture diagram ----------------
+const archModules = [
+  {name:'Camera', desc:'Ingests raw video from fixed CCTV or drone feed. Handles stream reconnection and buffering.'},
+  {name:'Frame Capture', desc:'Pulls frames at a fixed interval, resizes and normalizes for the detection model.'},
+  {name:'YOLOv8', desc:'Runs person detection per frame, outputting bounding boxes and confidence scores.'},
+  {name:'Tracking', desc:'ByteTrack assigns persistent IDs across frames so density and flow can be measured over time, not per-frame.'},
+  {name:'Zone Mapping', desc:'Uses Shapely polygons to map detections into user-defined zones (entrances, queues, exits).'},
+  {name:'Heatmap', desc:'Aggregates positional density per zone into a 32×32 grid, updated on a rolling window.'},
+  {name:'Trend Analysis', desc:'Looks at heatmap history to detect rising density trends before they become critical (in progress).'},
+  {name:'Risk Engine', desc:'Combines density, flow rate, and zone capacity into a single risk score per zone.'},
+  {name:'Alerts', desc:'Fires threshold-based alerts to the dashboard and, eventually, to a security team channel.'},
+  {name:'SQLite', desc:'Stores frame-level detections, zone events, and risk scores for historical analytics.'},
+  {name:'FastAPI', desc:'Serves the REST API layer connecting the pipeline to the dashboard — 17 endpoints today.'},
+  {name:'Dashboard', desc:'Chart.js-powered live view: heatmaps, risk scores, and alert feed for the operator.'},
+];
+const archWrap = document.getElementById('archWrap');
+archModules.forEach((m,i)=>{
+  const node = document.createElement('div');
+  node.className='arch-node';
+  node.innerHTML = `<span class="idx">${String(i+1).padStart(2,'0')}</span>${m.name}`;
+  node.addEventListener('click', ()=>{
+    detail.classList.toggle('open');
+  });
+  archWrap.appendChild(node);
+  const detail = document.createElement('div');
+  detail.className='arch-detail';
+  detail.textContent = m.desc;
+  archWrap.appendChild(detail);
+  if(i < archModules.length-1){
+    const arrow = document.createElement('div');
+    arrow.className='arch-arrow-v';
+    arrow.textContent='↓';
+    archWrap.appendChild(arrow);
+  }
+});
+
+// ---------------- learning tracker ----------------
+const learn = [
+  {name:'YOLO', status:'impl', label:'Implemented', progress:90, usage:'YOLOv8n powers the core person-detection stage of the pipeline.'},
+  {name:'OpenCV', status:'impl', label:'Implemented', progress:85, usage:'Frame capture, resizing, and drawing overlays for the debug view.'},
+  {name:'FastAPI', status:'impl', label:'Implemented', progress:80, usage:'Backend serving detections, risk scores, and dashboard data.'},
+  {name:'Docker', status:'progress', label:'In Progress', progress:40, usage:'Containerizing the inference service for consistent pilot deployment.'},
+  {name:'TensorRT', status:'planned', label:'Planned', progress:10, usage:'Targeted for inference speed-up ahead of multi-stream scaling.'},
+  {name:'OpenVINO', status:'planned', label:'Planned', progress:5, usage:'Evaluating for CPU-only edge deployments at low-budget venues.'},
+  {name:'NVIDIA Jetson', status:'planned', label:'Planned', progress:5, usage:'Target hardware for on-prem edge deployment (blocked, see Investment Readiness).'},
+  {name:'Drone SDK', status:'progress', label:'In Progress', progress:20, usage:'Live feed ingestion + GPS tagging for CrowdCare Event.'},
+];
+const learnGrid = document.getElementById('learnGrid');
+learn.forEach(l=>{
+  const card = document.createElement('div');
+  card.className='learn-card';
+  card.innerHTML = `
+    <div class="learn-head">
+      <div class="learn-name">${l.name}</div>
+      <div class="learn-badge ${l.status}">${l.label}</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${l.progress}%"></div></div>
+    <div class="learn-usage">${l.usage}</div>
+  `;
+  learnGrid.appendChild(card);
+});
+
+// ---------------- business table ----------------
+function dots(n){
+  let out='<span class="rate">';
+  for(let i=0;i<5;i++) out += `<span class="${i<n?'on':''}"></span>`;
+  return out+'</span>';
+}
+const biz = [
+  {seg:'Event Organizers', size:4, ease:4, rev:4, complex:2, cycle:'Short (weeks)'},
+  {seg:'Temples', size:4, ease:3, rev:3, complex:2, cycle:'Medium (1–2 months)'},
+  {seg:'Government', size:5, ease:1, rev:5, complex:5, cycle:'Long (6+ months)'},
+  {seg:'Smart Cities', size:5, ease:1, rev:5, complex:5, cycle:'Long (6–12 months)'},
+  {seg:'Stadiums', size:3, ease:3, rev:4, complex:3, cycle:'Medium (1–2 months)'},
+  {seg:'Shopping Malls', size:3, ease:3, rev:3, complex:2, cycle:'Short–Medium'},
+];
+const bizBody = document.getElementById('bizBody');
+biz.forEach(b=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="seg-name">${b.seg}</td><td>${dots(b.size)}</td><td>${dots(b.ease)}</td><td>${dots(b.rev)}</td><td>${dots(b.complex)}</td><td>${b.cycle}</td>`;
+  bizBody.appendChild(tr);
+});
+
+// ---------------- readiness ----------------
+const readiness = [
+  {label:'Technology Readiness Level', val:55, color:'var(--amber)'},
+  {label:'Product Readiness', val:60, color:'var(--amber)'},
+  {label:'Engineering Progress', val:68, color:'var(--safe)'},
+  {label:'Market Validation', val:15, color:'var(--risk)'},
+  {label:'Commercial Readiness', val:20, color:'var(--risk)'},
+  {label:'Pilot Readiness', val:45, color:'var(--amber)'},
+  {label:'Deployment Readiness', val:25, color:'var(--risk)'},
+];
+const readinessList = document.getElementById('readinessList');
+readiness.forEach(r=>{
+  const row = document.createElement('div');
+  row.className='readiness-row';
+  row.innerHTML = `<div class="readiness-label">${r.label}</div><div class="readiness-track"><div class="readiness-fill" style="width:${r.val}%; background:${r.color}"></div></div><div class="readiness-val">${r.val}%</div>`;
+  readinessList.appendChild(row);
+});
+
+// ================= PERSISTENT PROGRESS: SAVE / LOAD =================
+const STORAGE_KEY = 'crowdcare-progress-v1';
+
+function collectState(){
+  const state = {};
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    if(el.classList.contains('editable-bar')){
+      state[el.dataset.key + '-bar'] = el.style.width;
+    } else if(el.hasAttribute('contenteditable')){
+      state[el.dataset.key] = el.textContent.trim();
+    }
+  });
+  state['_savedAt'] = new Date().toISOString();
+  return state;
+}
+
+function applyState(state){
+  if(!state) return;
+  Object.keys(state).forEach(key=>{
+    if(key.endsWith('-bar')){
+      const base = key.replace('-bar','');
+      const bar = document.querySelector(`.editable-bar[data-key="${base}"]`);
+      if(bar) bar.style.width = state[key];
+    } else if(key !== '_savedAt'){
+      const el = document.querySelector(`[data-key="${key}"][contenteditable]`);
+      if(el) el.textContent = state[key];
+    }
+  });
+}
+
+async function loadProgress(){
+  try{
+    if(window.storage){
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        applyState(JSON.parse(res.value));
+        flashSaveStatus('Loaded saved progress');
+      }
+    }
+  }catch(e){
+    // no saved state yet — fine, use defaults
+  }
+}
+
+async function saveProgress(){
+  const state = collectState();
+  try{
+    if(window.storage){
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+      flashSaveStatus('Progress saved');
+    }else{
+      flashSaveStatus('Storage unavailable in this view');
+    }
+  }catch(e){
+    flashSaveStatus('Save failed — try again');
+  }
+  buildInfographic();
+}
+
+function flashSaveStatus(msg){
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=> el.classList.remove('show'), 2400);
+}
+
+// edit mode toggle
+const editBtn = document.getElementById('editToggleBtn');
+const saveBtn = document.getElementById('saveBtn');
+let editMode = false;
+editBtn.addEventListener('click', ()=>{
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  editBtn.textContent = editMode ? 'Editing' : 'Edit';
+  saveBtn.style.display = editMode ? 'block' : 'none';
+});
+saveBtn.addEventListener('click', saveProgress);
+
+loadProgress().then(buildInfographic);
+
+// ================= INFOGRAPHIC =================
+let chartRefs = {};
+function readCurrentValues(){
+  const g = (sel)=> document.querySelector(sel)?.textContent.trim();
+  const subsystems = [
+    ['Multi-camera', 'status-multicam'],
+    ['YOLOv8 detection', 'status-yolo'],
+    ['Tracking', 'status-tracking'],
+    ['Zone mapping', 'status-zonemap'],
+    ['Heatmaps', 'status-heatmap'],
+    ['Risk engine', 'status-riskengine'],
+    ['Dashboard', 'status-dashboard'],
+    ['Forecasting', 'status-forecast'],
+    ['Drone GPS', 'status-dronegps'],
+    ['Edge deploy', 'status-edge'],
+  ].map(([label,key])=>{
+    const el = document.querySelector(`.status-pct[data-key="${key}"]`);
+    const val = el ? parseInt(el.textContent) : 0;
+    return {label, val};
+  });
+
+  const readinessVals = Array.from(document.querySelectorAll('.readiness-row')).map(row=>{
+    return {
+      label: row.querySelector('.readiness-label').textContent,
+      val: parseInt(row.querySelector('.readiness-val').textContent)
+    };
+  });
+
+  const latency = {
+    'Inference': parseFloat(g('[data-key="m-latency"]')) || 0,
+    'API response': parseFloat(g('[data-key="m-response"]')) || 0,
+    'Risk scoring': parseFloat(g('[data-key="m-riskms"]')) || 0,
+  };
+
+  const business = Array.from(document.querySelectorAll('#bizBody tr')).map(tr=>{
+    const tds = tr.querySelectorAll('td');
+    return {
+      label: tds[0].textContent,
+      score: tds[3].querySelectorAll('.on').length
+    };
+  });
+
+  return {subsystems, readinessVals, latency, business,
+    overall: parseInt(g('#kpiProgress')) || 0,
+    commits: g('[data-key="github-commits"]'),
+    version: g('[data-key="current-version"]'),
+    fps: g('[data-key="m-fps"]'),
+    modules: g('[data-key="m-modules"]'),
+    apis: g('[data-key="m-apis"]'),
+    loc: g('[data-key="m-loc"]'),
+  };
+}
+
+function buildInfographic(){
+  const d = readCurrentValues();
+
+  // stat strip
+  const strip = document.getElementById('statStrip');
+  strip.innerHTML = '';
+  [
+    [d.overall+'%','Overall Progress'],
+    [d.version,'Current Version'],
+    [d.commits,'GitHub Commits'],
+    [d.fps+' fps','Inference Speed'],
+    [d.modules,'Modules'],
+    [d.apis,'APIs'],
+  ].forEach(([num,lbl])=>{
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="num">${num}</div><div class="lbl">${lbl}</div>`;
+    strip.appendChild(div);
+  });
+
+  const fontColor = '#9aa2ad';
+  const gridColor = '#ffffff12';
+  Chart.defaults.color = fontColor;
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 10.5;
+
+  function makeChart(id, config){
+    if(chartRefs[id]) chartRefs[id].destroy();
+    chartRefs[id] = new Chart(document.getElementById(id), config);
+  }
+
+  makeChart('chartSubsystems', {
+    type:'bar',
+    data:{ labels:d.subsystems.map(s=>s.label),
+      datasets:[{ data:d.subsystems.map(s=>s.val),
+        backgroundColor:d.subsystems.map(s=> s.val>=70?'#1fa97a': s.val>=30?'#ffb545':'#ff5c5c'),
+        borderRadius:4, barThickness:14 }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}},
+      scales:{ x:{max:100, grid:{color:gridColor}}, y:{grid:{display:false}} } }
+  });
+
+  makeChart('chartReadiness', {
+    type:'radar',
+    data:{ labels:d.readinessVals.map(r=>r.label.replace(' Readiness','').replace(' Level','')),
+      datasets:[{ data:d.readinessVals.map(r=>r.val), backgroundColor:'#ff7a4530',
+        borderColor:'#ff7a45', pointBackgroundColor:'#ff7a45' }]},
+    options:{ plugins:{legend:{display:false}},
+      scales:{ r:{ min:0, max:100, grid:{color:gridColor}, angleLines:{color:gridColor}, pointLabels:{font:{size:9.5}} } } }
+  });
+
+  makeChart('chartLatency', {
+    type:'bar',
+    data:{ labels:Object.keys(d.latency),
+      datasets:[{ data:Object.values(d.latency), backgroundColor:'#2e7dff', borderRadius:4, barThickness:30 }]},
+    options:{ plugins:{legend:{display:false}},
+      scales:{ y:{grid:{color:gridColor}}, x:{grid:{display:false}} } }
+  });
+
+  makeChart('chartBusiness', {
+    type:'bar',
+    data:{ labels:d.business.map(b=>b.label),
+      datasets:[{ label:'Revenue potential (of 5)', data:d.business.map(b=>b.score),
+        backgroundColor:'#ffb545', borderRadius:4, barThickness:16 }]},
+    options:{ plugins:{legend:{display:false}},
+      scales:{ y:{max:5, grid:{color:gridColor}}, x:{grid:{display:false}, ticks:{maxRotation:20, minRotation:20}} } }
+  });
+}
+</script>
+</body>
+</html>
